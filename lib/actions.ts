@@ -1,7 +1,21 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { NextResponse } from 'next/server';
+
+export async function getAllForms(){
+    try {
+        const forms = await prisma.form.findMany({
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+
+        return forms;
+    } catch (error) {
+        console.error('Error fetching forms:', error);
+        return error;
+    }   
+}
 
 export async function getForm(formId: string) {
     try {
@@ -142,6 +156,7 @@ export async function updateFormElement(id: string, data: {
     max?: string | null;
     step?: string | null;
     accept?: string | null;
+    subformId?: string | null;
 }) {
     console.log('Updating element:', { id, ...data });
     try {
@@ -156,6 +171,7 @@ export async function updateFormElement(id: string, data: {
             max?: string | null;
             step?: string | null;
             accept?: string | null;
+            subformId?: string | null;
         } = {};
 
         // Only include properties that exist in the input
@@ -168,6 +184,7 @@ export async function updateFormElement(id: string, data: {
         if ('max' in data) prismaData.max = data.max;
         if ('step' in data) prismaData.step = data.step;
         if ('accept' in data) prismaData.accept = data.accept;
+        if('subformId' in data) prismaData.subformId = data.subformId;
 
         const result = await prisma.formElement.update({
             where: { id },

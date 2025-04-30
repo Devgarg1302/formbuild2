@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FormElement } from '@/types/FormElement';
+import { getForm } from '@/lib/actions';
 
 interface FormElementProps {
   id: string;
@@ -10,6 +11,14 @@ interface FormElementProps {
   item: FormElement;
 
 }
+
+interface Form {
+  id: string;
+  title: string;
+  description?: string;
+  published: boolean;
+}
+
 
 // Add a helper component for rendering SVG icons
 const IconSvg = ({ path }: { path: string }) => (
@@ -33,6 +42,8 @@ export default function SortableFormElement({
     transition,
     isDragging,
   } = useSortable({ id });
+
+  const [subform, setsubform] = useState<Form | null>(null);
 
   const getElementIcon = (type: string) => {
     switch (type) {
@@ -92,6 +103,16 @@ export default function SortableFormElement({
     zIndex: isDragging ? 1000 : 1,
   };
 
+  useEffect(() => {
+    const fetchsubform = async () => {
+      if (item.subformId) {
+        const subformElement = await getForm(item.subformId) as Form;
+        setsubform(subformElement);
+      }
+    }
+    fetchsubform()
+  })
+
   return (
     <div
       ref={setNodeRef}
@@ -132,7 +153,7 @@ export default function SortableFormElement({
             {item.accept && (
               <p className="text-sm text-gray-500 mt-1">
                 Accepted Types: {(() => {
-                  try{
+                  try {
                     const parsed = JSON.parse(item.accept as string);
                     return parsed && parsed.types && Array.isArray(parsed.types)
                       ? parsed.types.join(', ')
@@ -140,8 +161,18 @@ export default function SortableFormElement({
                   } catch (e) {
                     return 'Invalid accepted types format';
                   }
-                }) ()}
+                })()}
               </p>
+            )}
+            {item.subformId && subform && (
+              <>
+                <h3 className="text-sm text-gray-500 mt-1">
+                  Subform : {subform?.title}
+                </h3>
+                <p className='text-sm text-gray-500 mt-1'>
+                  Description: {subform?.description}
+                </p>
+              </>
             )}
           </div>
         </div>

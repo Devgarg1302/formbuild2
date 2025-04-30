@@ -858,6 +858,10 @@ export default function FormDisplay() {
                                         )}
                                     </div>
                                 )}
+                                
+                                {element.type === 'subform' && (
+                                    renderNestedFormElements(element)
+                                )}
 
                                 {element.type === 'image' && (
                                     <div className="mt-1">

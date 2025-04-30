@@ -21,6 +21,7 @@ model Form {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   formElements FormElement[]
+  nestedIn     FormElement[] @relation("SubformRelation")
 }
 
 model FormElement {
@@ -41,4 +42,6 @@ model FormElement {
   updatedAt   DateTime @updatedAt
   form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
   formId      String
+  subform     Form?    @relation("SubformRelation", fields: [subformId], references: [id], onDelete: SetNull)
+  subformId   String?
 }

@@ -1,3 +1,4 @@
+import { getAllForms } from '@/lib/actions';
 import { FormElement } from '@/types/FormElement';
 import React, { useEffect, useState } from 'react'
 
@@ -6,6 +7,13 @@ interface Props {
   onSave: (editingItem: FormElement) => void;
   setEditingItem: (item: FormElement | null) => void;
 }
+interface Form {
+  id: string;
+  title: string;
+  description?: string;
+  published: boolean;
+}
+
 
 export default function ElementEditor({ editingItem, onSave, setEditingItem }: Props) {
 
@@ -18,6 +26,8 @@ export default function ElementEditor({ editingItem, onSave, setEditingItem }: P
   const [min, setMin] = useState('');
   const [max, setMax] = useState('');
   const [step, setStep] = useState('');
+  const [allForms, setAllForms] = useState<Form[]>([]);
+  const [selectedsubformId, setselectedsubformId] = useState('');
 
   useEffect(() => {
     if (editingItem) {
@@ -61,10 +71,23 @@ export default function ElementEditor({ editingItem, onSave, setEditingItem }: P
       } else {
         setAccept('');
       }
+
+      if (editingItem.type === 'subform') {
+        const fetchAllForms = async () => {
+          const allforms = await getAllForms() as Form[];
+          setAllForms(allforms);
+          if (editingItem.subformId) {
+            setselectedsubformId(editingItem.subformId);
+          }
+        };
+        fetchAllForms();
+      }
+
     }
   }, [editingItem]);
 
   if (!editingItem) return null;
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +121,7 @@ export default function ElementEditor({ editingItem, onSave, setEditingItem }: P
       max,
       step,
       options: processedOptions ? JSON.stringify(processedOptions) : null,
+      subformId: selectedsubformId || null,
     });
   };
 
@@ -114,6 +138,16 @@ export default function ElementEditor({ editingItem, onSave, setEditingItem }: P
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
+              className="border px-2 py-1 w-full"
+            />
+          </div>
+
+          <div className="mb-3">
+            <label className="block mb-1">Help Text</label>
+            <input
+              type="text"
+              value={helpText}
+              onChange={(e) => setHelpText(e.target.value)}
               className="border px-2 py-1 w-full"
             />
           </div>
@@ -198,15 +232,24 @@ export default function ElementEditor({ editingItem, onSave, setEditingItem }: P
             </div>
           )}
 
-          <div className="mb-3">
-            <label className="block mb-1">Help Text</label>
-            <input
-              type="text"
-              value={helpText}
-              onChange={(e) => setHelpText(e.target.value)}
-              className="border px-2 py-1 w-full"
-            />
-          </div>
+          {editingItem.type === 'subform' && (
+            <div className="mb-3">
+              <label htmlFor="subform" className="block mb-1">
+                Select Form
+              </label>
+
+              <select className="border w-full overflow-x-auto px-1 py-2" value={selectedsubformId} onChange={(e) => (setselectedsubformId(e.target.value))}>
+                <option value="">--Set a SubForm--</option>
+                {allForms
+                .filter((form) => form.id !== editingItem.formId)
+                .map((form) => (
+                  <option key={form.id} value={form.id}>
+                    {form.title} {form.description ? `- ${form.description}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
 
           <div className="mb-4">

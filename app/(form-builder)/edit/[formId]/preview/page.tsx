@@ -32,7 +32,7 @@ interface NestedForm {
 }
 
 export default function FormDisplay() {
-  const {formId} = useParams();
+  const { formId } = useParams();
   const [form, setForm] = useState<Form | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,31 +52,32 @@ export default function FormDisplay() {
     const fetchForm = async () => {
       try {
         const response = await fetch(`/api/forms/${formId}`);
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch form');
         }
-        
+
         const formData = await response.json();
-        
+
         // Check if form is published
         if (!formData.published) {
           setError('This form is not available for submission.');
           setIsLoading(false);
           return;
         }
-        
+
         setForm(formData);
-        
+
         // Find all subform elements
         const subformElements = formData.formElements.filter(
           (element: FormElement) => element.type === 'subform' && element.subformId
         );
-        
+
+
         // Fetch all subform data
         if (subformElements.length > 0) {
           const nestedFormsData: Record<string, NestedForm> = {};
-          
+
           await Promise.all(
             subformElements.map(async (element: FormElement) => {
               if (element.subformId) {
@@ -92,10 +93,10 @@ export default function FormDisplay() {
               }
             })
           );
-          
+
           setNestedForms(nestedFormsData);
         }
-        
+
         // Initialize form values
         const initialValues: Record<string, any> = {};
         formData.formElements.forEach((element: FormElement) => {
@@ -110,7 +111,7 @@ export default function FormDisplay() {
             initialValues[element.id] = '';
           }
         });
-        
+
         setFormValues(initialValues);
         setIsLoading(false);
       } catch (err) {
@@ -118,7 +119,7 @@ export default function FormDisplay() {
         setIsLoading(false);
       }
     };
-    
+
     fetchForm();
   }, [formId]);
 
@@ -132,7 +133,7 @@ export default function FormDisplay() {
           [nestedElementId]: value,
         },
       });
-      
+
       // Clear validation error when input changes
       if (formErrors[`${elementId}.${nestedElementId}`]) {
         setFormErrors({
@@ -146,7 +147,7 @@ export default function FormDisplay() {
         ...formValues,
         [elementId]: value,
       });
-      
+
       // Clear validation error when input changes
       if (formErrors[elementId]) {
         setFormErrors({
@@ -162,13 +163,13 @@ export default function FormDisplay() {
       // Handle nested checkbox changes
       const currentNestedValues = formValues[elementId]?.[nestedElementId] || [];
       let newNestedValues;
-      
+
       if (checked) {
         newNestedValues = [...currentNestedValues, value];
       } else {
         newNestedValues = currentNestedValues.filter((val: string) => val !== value);
       }
-      
+
       setFormValues({
         ...formValues,
         [elementId]: {
@@ -176,7 +177,7 @@ export default function FormDisplay() {
           [nestedElementId]: newNestedValues,
         },
       });
-      
+
       // Clear validation error when input changes
       if (formErrors[`${elementId}.${nestedElementId}`]) {
         setFormErrors({
@@ -188,18 +189,18 @@ export default function FormDisplay() {
       // Handle regular checkbox changes
       const currentValues = formValues[elementId] || [];
       let newValues;
-      
+
       if (checked) {
         newValues = [...currentValues, value];
       } else {
         newValues = currentValues.filter((val: string) => val !== value);
       }
-      
+
       setFormValues({
         ...formValues,
         [elementId]: newValues,
       });
-      
+
       // Clear validation error when input changes
       if (formErrors[elementId]) {
         setFormErrors({
@@ -212,13 +213,13 @@ export default function FormDisplay() {
 
   const handleFileUpload = async (elementId: string, file: File) => {
     if (!file) return;
-    
+
     // Clear previous errors
     setFileUploadErrors(prev => ({
       ...prev,
       [elementId]: ''
     }));
-    
+
     // Validate file size (10MB max)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
@@ -228,28 +229,28 @@ export default function FormDisplay() {
       }));
       return;
     }
-    
+
     // Set uploading state
     setFileUploading(prev => ({
       ...prev,
       [elementId]: true
     }));
-    
+
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to upload file');
       }
-      
+
       const data = await response.json();
-      
+
       // Store file URL
       setFileUploads(prev => ({
         ...prev,
@@ -258,13 +259,13 @@ export default function FormDisplay() {
           fileName: data.fileName
         }
       }));
-      
+
       // Update form values with the file URL
       setFormValues(prev => ({
         ...prev,
         [elementId]: data.url
       }));
-      
+
     } catch (err) {
       console.error('Error uploading file:', err);
       setFileUploadErrors(prev => ({
@@ -282,15 +283,15 @@ export default function FormDisplay() {
   const validateForm = () => {
     const errors: Record<string, string> = {};
     let isValid = true;
-    
+
     if (!form) return false;
-    
+
     // Validate main form elements
     form.formElements.forEach((element) => {
       // Check required fields
       if (element.required) {
         const value = formValues[element.id];
-        
+
         if (element.type === 'checkbox') {
           if (!Array.isArray(value) || value.length === 0) {
             errors[element.id] = 'This field is required';
@@ -303,7 +304,7 @@ export default function FormDisplay() {
           isValid = false;
         }
       }
-      
+
       // Check email validation
       if (element.type === 'email' && formValues[element.id]) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -312,7 +313,7 @@ export default function FormDisplay() {
           isValid = false;
         }
       }
-      
+
       // Check number validation
       if (element.type === 'number' && formValues[element.id]) {
         if (isNaN(Number(formValues[element.id]))) {
@@ -320,20 +321,20 @@ export default function FormDisplay() {
           isValid = false;
         }
       }
-      
+
       // Validate subform elements if this is a subform element
       if (element.type === 'subform' && element.subformId) {
         const subform = nestedForms[element.subformId];
         if (!subform || !subform.formElements) {
           return; // Skip validation if subform data isn't loaded
         }
-        
+
         const subformValues = formValues[element.id] || {};
-        
+
         subform.formElements.forEach((subElement) => {
           if (subElement.required) {
             const subValue = subformValues[subElement.id];
-            
+
             if (subElement.type === 'checkbox') {
               if (!Array.isArray(subValue) || subValue.length === 0) {
                 errors[`${element.id}.${subElement.id}`] = 'This field is required';
@@ -347,30 +348,30 @@ export default function FormDisplay() {
         });
       }
     });
-    
+
     setFormErrors(errors);
     return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Flatten nested form values and convert to responses format
       const responses = [];
-      
+
       for (const [elementId, value] of Object.entries(formValues || {})) {
         if (value === null || value === undefined) {
           // Skip null or undefined values
           continue;
         }
-        
+
         if (typeof value === 'object' && !Array.isArray(value)) {
           // This is a subform value
           for (const [subElementId, subValue] of Object.entries(value || {})) {
@@ -378,14 +379,14 @@ export default function FormDisplay() {
               // Skip null or undefined sub-values
               continue;
             }
-            
+
             responses.push({
               formElementId: elementId,
               subElementId,
-              value: Array.isArray(subValue) 
-                ? subValue.join(', ') 
-                : subValue === null || subValue === undefined 
-                  ? '' 
+              value: Array.isArray(subValue)
+                ? subValue.join(', ')
+                : subValue === null || subValue === undefined
+                  ? ''
                   : String(subValue),
             });
           }
@@ -393,18 +394,18 @@ export default function FormDisplay() {
           // This is a regular form value
           responses.push({
             formElementId: elementId,
-            value: Array.isArray(value) 
-              ? value.join(', ') 
+            value: Array.isArray(value)
+              ? value.join(', ')
               : String(value),
           });
         }
       }
-      
+
       const submissionData = {
         formId: formId,
         responses,
       };
-      
+
       // Submit form data
       const response = await fetch('/api/submissions', {
         method: 'POST',
@@ -413,13 +414,13 @@ export default function FormDisplay() {
         },
         body: JSON.stringify(submissionData),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to submit form');
       }
-      
+
       setIsSubmitted(true);
-      
+
     } catch (err) {
       setError('Error submitting form. Please try again.');
       console.error('Submission error:', err);
@@ -436,7 +437,7 @@ export default function FormDisplay() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-red-500 mb-4">{error}</p>
-        <div onClick={()=>{router.back()}} className="text-blue-500 hover:underline cursor-pointer">
+        <div onClick={() => { router.back() }} className="text-blue-500 hover:underline cursor-pointer">
           Return Home
         </div>
       </div>
@@ -447,7 +448,7 @@ export default function FormDisplay() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="mb-4">Form not found</p>
-        <div onClick={()=>{router.back()}} className="text-blue-500 hover:underline cursor-pointer">
+        <div onClick={() => { router.back() }} className="text-blue-500 hover:underline cursor-pointer">
           Return Home
         </div>
       </div>
@@ -471,7 +472,7 @@ export default function FormDisplay() {
   // Helper function to safely parse options JSON
   const safelyParseOptions = (optionsString?: string) => {
     if (!optionsString) return { choices: [] };
-    
+
     try {
       const parsed = JSON.parse(optionsString);
       if (!parsed || !parsed.choices || !Array.isArray(parsed.choices)) {
@@ -493,13 +494,14 @@ export default function FormDisplay() {
         </div>
       );
     }
-    
+
     const nestedForm = nestedForms[parentElement.subformId];
     const nestedFormValues = formValues[parentElement.id] || {};
-    
+
+
     return (
       <div className="border-l-4 border-blue-200 pl-4 py-2">
-        <p className="text-sm text-blue-500 mb-2">
+        <p className="text-xxl text-gray-600 mb-2">
           {nestedForm.title}
         </p>
         <div className="space-y-4">
@@ -511,66 +513,61 @@ export default function FormDisplay() {
                   {element.label}
                   {element.required && <span className="text-red-500 ml-1">*</span>}
                 </label>
-                
+
                 {element.helpText && (
                   <p className="text-gray-500 text-sm">{element.helpText}</p>
                 )}
-                
+
                 {element.type === 'text' && (
                   <input
                     type="text"
                     placeholder={element.placeholder}
                     value={nestedFormValues[element.id] || ''}
                     onChange={(e) => handleInputChange(parentElement.id, e.target.value, element.id)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'email' && (
                   <input
                     type="email"
                     placeholder={element.placeholder}
                     value={nestedFormValues[element.id] || ''}
                     onChange={(e) => handleInputChange(parentElement.id, e.target.value, element.id)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'number' && (
                   <input
                     type="number"
                     placeholder={element.placeholder}
                     value={nestedFormValues[element.id] || ''}
                     onChange={(e) => handleInputChange(parentElement.id, e.target.value, element.id)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'textarea' && (
                   <textarea
                     placeholder={element.placeholder}
                     value={nestedFormValues[element.id] || ''}
                     onChange={(e) => handleInputChange(parentElement.id, e.target.value, element.id)}
                     rows={4}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'select' && element.options && (
                   <select
                     value={nestedFormValues[element.id] || ''}
                     onChange={(e) => handleInputChange(parentElement.id, e.target.value, element.id)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   >
                     <option value="">Select an option</option>
                     {safelyParseOptions(element.options).choices.map((option: string) => (
@@ -580,7 +577,7 @@ export default function FormDisplay() {
                     ))}
                   </select>
                 )}
-                
+
                 {element.type === 'radio' && element.options && (
                   <div className="space-y-2">
                     {safelyParseOptions(element.options).choices.map((option: string) => (
@@ -599,7 +596,7 @@ export default function FormDisplay() {
                     ))}
                   </div>
                 )}
-                
+
                 {element.type === 'checkbox' && element.options && (
                   <div className="space-y-2">
                     {safelyParseOptions(element.options).choices.map((option: string) => (
@@ -617,27 +614,25 @@ export default function FormDisplay() {
                     ))}
                   </div>
                 )}
-                
+
                 {element.type === 'date' && (
                   <input
                     type="date"
                     value={nestedFormValues[element.id] || ''}
                     onChange={(e) => handleInputChange(parentElement.id, e.target.value, element.id)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[`${parentElement.id}.${element.id}`] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'file' && (
                   <div className="mt-1">
                     <input
                       type="file"
                       id={`file-${parentElement.id}-${element.id}`}
                       onChange={(e) => e.target.files && e.target.files[0] && handleFileUpload(`${parentElement.id}-${element.id}`, e.target.files[0])}
-                      className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
-                        fileUploadErrors[`${parentElement.id}-${element.id}`] ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${fileUploadErrors[`${parentElement.id}-${element.id}`] ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       disabled={fileUploading[`${parentElement.id}-${element.id}`]}
                     />
                     {fileUploading[`${parentElement.id}-${element.id}`] && (
@@ -659,7 +654,7 @@ export default function FormDisplay() {
                     )}
                   </div>
                 )}
-                
+
                 {element.type === 'image' && (
                   <div className="mt-1">
                     <input
@@ -667,9 +662,8 @@ export default function FormDisplay() {
                       id={`image-${parentElement.id}-${element.id}`}
                       accept="image/*"
                       onChange={(e) => e.target.files && e.target.files[0] && handleFileUpload(`${parentElement.id}-${element.id}`, e.target.files[0])}
-                      className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
-                        fileUploadErrors[`${parentElement.id}-${element.id}`] ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${fileUploadErrors[`${parentElement.id}-${element.id}`] ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       disabled={fileUploading[`${parentElement.id}-${element.id}`]}
                     />
                     {fileUploading[`${parentElement.id}-${element.id}`] && (
@@ -681,9 +675,9 @@ export default function FormDisplay() {
                     {fileUploads[`${parentElement.id}-${element.id}`] && (
                       <div className="mt-2">
                         <div className="relative w-24 h-24 overflow-hidden rounded border border-gray-200">
-                          <img 
-                            src={fileUploads[`${parentElement.id}-${element.id}`].url} 
-                            alt="Uploaded preview" 
+                          <img
+                            src={fileUploads[`${parentElement.id}-${element.id}`].url}
+                            alt="Uploaded preview"
                             className="object-cover w-full h-full"
                           />
                         </div>
@@ -694,14 +688,14 @@ export default function FormDisplay() {
                     )}
                   </div>
                 )}
-                
+
                 {element.type === 'subform' && element.subformId && (
                   renderNestedFormElements({
                     ...element,
                     id: `${element.id}`
                   })
                 )}
-                
+
                 {formErrors[`${parentElement.id}.${element.id}`] && (
                   <p className="text-red-500 text-sm">{formErrors[`${parentElement.id}.${element.id}`]}</p>
                 )}
@@ -717,7 +711,7 @@ export default function FormDisplay() {
       <div className="bg-white p-6 rounded shadow-md">
         <h1 className="text-2xl font-bold mb-2">{form.title}</h1>
         {form.description && <p className="text-gray-600 mb-6">{form.description}</p>}
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {form.formElements
             .sort((a, b) => a.order - b.order)
@@ -727,66 +721,61 @@ export default function FormDisplay() {
                   {element.label}
                   {element.required && <span className="text-red-500 ml-1">*</span>}
                 </label>
-                
+
                 {element.helpText && (
                   <p className="text-gray-500 text-sm">{element.helpText}</p>
                 )}
-                
+
                 {element.type === 'text' && (
                   <input
                     type="text"
                     placeholder={element.placeholder}
                     value={formValues[element.id] || ''}
                     onChange={(e) => handleInputChange(element.id, e.target.value)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'email' && (
                   <input
                     type="email"
                     placeholder={element.placeholder}
                     value={formValues[element.id] || ''}
                     onChange={(e) => handleInputChange(element.id, e.target.value)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'number' && (
                   <input
                     type="number"
                     placeholder={element.placeholder}
                     value={formValues[element.id] || ''}
                     onChange={(e) => handleInputChange(element.id, e.target.value)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'textarea' && (
                   <textarea
                     placeholder={element.placeholder}
                     value={formValues[element.id] || ''}
                     onChange={(e) => handleInputChange(element.id, e.target.value)}
                     rows={4}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'select' && element.options && (
                   <select
                     value={formValues[element.id] || ''}
                     onChange={(e) => handleInputChange(element.id, e.target.value)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   >
                     <option value="">Select an option</option>
                     {safelyParseOptions(element.options).choices.map((option: string) => (
@@ -796,7 +785,7 @@ export default function FormDisplay() {
                     ))}
                   </select>
                 )}
-                
+
                 {element.type === 'radio' && element.options && (
                   <div className="space-y-2">
                     {safelyParseOptions(element.options).choices.map((option: string) => (
@@ -815,7 +804,7 @@ export default function FormDisplay() {
                     ))}
                   </div>
                 )}
-                
+
                 {element.type === 'checkbox' && element.options && (
                   <div className="space-y-2">
                     {safelyParseOptions(element.options).choices.map((option: string) => (
@@ -833,27 +822,25 @@ export default function FormDisplay() {
                     ))}
                   </div>
                 )}
-                
+
                 {element.type === 'date' && (
                   <input
                     type="date"
                     value={formValues[element.id] || ''}
                     onChange={(e) => handleInputChange(element.id, e.target.value)}
-                    className={`w-full px-3 py-2 border rounded ${
-                      formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded ${formErrors[element.id] ? 'border-red-500' : 'border-gray-300'
+                      }`}
                   />
                 )}
-                
+
                 {element.type === 'file' && (
                   <div className="mt-1">
                     <input
                       type="file"
                       id={`file-${element.id}`}
                       onChange={(e) => e.target.files && e.target.files[0] && handleFileUpload(element.id, e.target.files[0])}
-                      className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
-                        fileUploadErrors[element.id] ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${fileUploadErrors[element.id] ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       disabled={fileUploading[element.id]}
                     />
                     {fileUploading[element.id] && (
@@ -875,7 +862,7 @@ export default function FormDisplay() {
                     )}
                   </div>
                 )}
-                
+
                 {element.type === 'image' && (
                   <div className="mt-1">
                     <input
@@ -883,9 +870,8 @@ export default function FormDisplay() {
                       id={`image-${element.id}`}
                       accept="image/*"
                       onChange={(e) => e.target.files && e.target.files[0] && handleFileUpload(element.id, e.target.files[0])}
-                      className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${
-                        fileUploadErrors[element.id] ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${fileUploadErrors[element.id] ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       disabled={fileUploading[element.id]}
                     />
                     {fileUploading[element.id] && (
@@ -897,9 +883,9 @@ export default function FormDisplay() {
                     {fileUploads[element.id] && (
                       <div className="mt-2">
                         <div className="relative w-24 h-24 overflow-hidden rounded border border-gray-200">
-                          <img 
-                            src={fileUploads[element.id].url} 
-                            alt="Uploaded preview" 
+                          <img
+                            src={fileUploads[element.id].url}
+                            alt="Uploaded preview"
                             className="object-cover w-full h-full"
                           />
                         </div>
@@ -910,13 +896,17 @@ export default function FormDisplay() {
                     )}
                   </div>
                 )}
-                
+
+                {element.type === 'subform' && (
+                  renderNestedFormElements(element)
+                )}
+
                 {formErrors[element.id] && (
                   <p className="text-red-500 text-sm">{formErrors[element.id]}</p>
                 )}
               </div>
             ))}
-          
+
           <div className="mt-8">
             <button
               type="submit"

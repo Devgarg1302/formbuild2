@@ -9,6 +9,7 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { deleteFormElement, getFormElements, insertFormElement, reorderFormElements, updateFormElement } from '@/lib/actions';
 import { FormElement } from '@/types/FormElement';
 
+
 interface Props {
     formId: string;
 }
@@ -30,6 +31,64 @@ export default function FormCanvas({ formId }: Props) {
     useEffect(() => {
         getFormElements(formId).then(setItems);
     }, [formId]);
+
+    const IconSvg = ({ path }: { path: string }) => (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={path} />
+        </svg>
+    );
+    const getElementIcon = (type: string) => {
+        switch (type) {
+            case 'text':
+                return (
+                    <IconSvg path="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                );
+            case 'email':
+                return (
+                    <IconSvg path="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                );
+            case 'number':
+                return (
+                    <IconSvg path="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                );
+            case 'textarea':
+                return (
+                    <IconSvg path="M4 6h16M4 12h16M4 18h7" />
+                );
+            case 'select':
+                return (
+                    <IconSvg path="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                );
+            case 'radio':
+                return (
+                    <IconSvg path="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                );
+            case 'checkbox':
+                return (
+                    <IconSvg path="M5 13l4 4L19 7" />
+                );
+            case 'date':
+                return (
+                    <IconSvg path="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                );
+            case 'subform':
+                return (
+                    <IconSvg path="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                );
+            case 'file':
+                return (
+                    <IconSvg path="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                );
+            case 'image':
+                return (
+                    <IconSvg path="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                );
+            default:
+                return null;
+        }
+    };
+
+
 
     const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault();
@@ -96,7 +155,6 @@ export default function FormCanvas({ formId }: Props) {
     useEffect(() => {
         const handleSidebarDragStart = () => {
             try {
-                // Get the element data from localStorage
                 const jsonData = localStorage.getItem('dragging-element');
                 if (jsonData) {
                     const parsed = JSON.parse(jsonData);
@@ -153,6 +211,7 @@ export default function FormCanvas({ formId }: Props) {
                 max: editingItem.max || undefined,
                 step: editingItem.step || undefined,
                 accept: editingItem.accept || undefined,
+                subformId: editingItem.subformId || undefined,
             }
 
             await updateFormElement(editingItem.id, dataToUpdate);
@@ -196,7 +255,7 @@ export default function FormCanvas({ formId }: Props) {
 
     // const handleEditingChange = (field: string, value: string | boolean) => {
     //     if (!editingItem) return;
-        
+
     //     if (field === 'options' && ['radio', 'checkbox', 'select'].includes(editingItem.type)) {
     //         // Split by comma and trim each option
     //         const optionsArray = typeof value === 'string' ? value.split(',').map(opt => opt.trim()).filter(Boolean) : [];
@@ -213,139 +272,139 @@ export default function FormCanvas({ formId }: Props) {
     // };
 
     // Helper function to render the appropriate form element preview
-    const renderFormElement = (item: FormElement) => {
-        const options = item.options?.split(',').map(opt => opt.trim()) || [];
+    // const renderFormElement = (item: FormElement) => {
+    //     const options = item.options?.split(',').map(opt => opt.trim()) || [];
 
-        switch (item.type) {
-            case 'text':
-                return (
-                    <input
-                        type='text'
-                        className="border px-2 py-1 w-full"
-                        placeholder={item.placeholder || "Input field"}
-                        required={item.required ?? false}
-                    />
-                );
+    //     switch (item.type) {
+    //         case 'text':
+    //             return (
+    //                 <input
+    //                     type='text'
+    //                     className="border px-2 py-1 w-full"
+    //                     placeholder={item.placeholder || "Input field"}
+    //                     required={item.required ?? false}
+    //                 />
+    //             );
 
-            case 'textarea':
-                return (
-                    <textarea
-                        className="border px-2 py-1 w-full"
-                        placeholder={item.placeholder || "Textarea field"}
-                        required={item.required ?? false}
-                    />
-                );
+    //         case 'textarea':
+    //             return (
+    //                 <textarea
+    //                     className="border px-2 py-1 w-full"
+    //                     placeholder={item.placeholder || "Textarea field"}
+    //                     required={item.required ?? false}
+    //                 />
+    //             );
 
-            case 'checkbox':
-                return (
-                    <label className="flex items-center">
-                        <input
-                            type="checkbox"
-                            className="mr-2"
-                            required={item.required ?? false}
-                        />
-                        {item.placeholder || "Checkbox option"}
-                    </label>
-                );
+    //         case 'checkbox':
+    //             return (
+    //                 <label className="flex items-center">
+    //                     <input
+    //                         type="checkbox"
+    //                         className="mr-2"
+    //                         required={item.required ?? false}
+    //                     />
+    //                     {item.placeholder || "Checkbox option"}
+    //                 </label>
+    //             );
 
-            case 'radio':
-                return (
-                    <div className="space-y-2">
-                        {options.map((option, i) => (
-                            <label key={i} className="flex items-center">
-                                <input
-                                    type="radio"
-                                    name={`radio-${item.id}`}
-                                    className="mr-2"
-                                    required={item.required ?? false}
-                                />
-                                {option}
-                            </label>
-                        ))}
-                    </div>
-                );
+    //         case 'radio':
+    //             return (
+    //                 <div className="space-y-2">
+    //                     {options.map((option, i) => (
+    //                         <label key={i} className="flex items-center">
+    //                             <input
+    //                                 type="radio"
+    //                                 name={`radio-${item.id}`}
+    //                                 className="mr-2"
+    //                                 required={item.required ?? false}
+    //                             />
+    //                             {option}
+    //                         </label>
+    //                     ))}
+    //                 </div>
+    //             );
 
-            case 'select':
-                return (
-                    <select
-                        className="border px-2 py-1 w-full"
-                        required={item.required ?? false}
-                    >
-                        <option value="">Select an option</option>
-                        {options.map((option, i) => (
-                            <option key={i} value={option}>{option}</option>
-                        ))}
-                    </select>
-                );
+    //         case 'select':
+    //             return (
+    //                 <select
+    //                     className="border px-2 py-1 w-full"
+    //                     required={item.required ?? false}
+    //                 >
+    //                     <option value="">Select an option</option>
+    //                     {options.map((option, i) => (
+    //                         <option key={i} value={option}>{option}</option>
+    //                     ))}
+    //                 </select>
+    //             );
 
-            case 'number':
-                return (
-                    <input
-                        type="number"
-                        className="border px-2 py-1 w-full"
-                        placeholder={item.placeholder || "Number field"}
-                        min={item.min || undefined}
-                        max={item.max || undefined}
-                        step={item.step || undefined}
-                        required={item.required ?? false}
-                    />
-                );
+    //         case 'number':
+    //             return (
+    //                 <input
+    //                     type="number"
+    //                     className="border px-2 py-1 w-full"
+    //                     placeholder={item.placeholder || "Number field"}
+    //                     min={item.min || undefined}
+    //                     max={item.max || undefined}
+    //                     step={item.step || undefined}
+    //                     required={item.required ?? false}
+    //                 />
+    //             );
 
-            case 'date':
-                return (
-                    <input
-                        type="date"
-                        className="border px-2 py-1 w-full"
-                        required={item.required ?? false}
-                    />
-                );
+    //         case 'date':
+    //             return (
+    //                 <input
+    //                     type="date"
+    //                     className="border px-2 py-1 w-full"
+    //                     required={item.required ?? false}
+    //                 />
+    //             );
 
-            case 'email':
-                return (
-                    <input
-                        type="email"
-                        className="border px-2 py-1 w-full"
-                        placeholder={item.placeholder || "Email field"}
-                        required={item.required ?? false}
-                    />
-                );
+    //         case 'email':
+    //             return (
+    //                 <input
+    //                     type="email"
+    //                     className="border px-2 py-1 w-full"
+    //                     placeholder={item.placeholder || "Email field"}
+    //                     required={item.required ?? false}
+    //                 />
+    //             );
 
-            case 'password':
-                return (
-                    <input
-                        type="password"
-                        className="border px-2 py-1 w-full"
-                        placeholder={item.placeholder || "Password field"}
-                        required={item.required ?? false}
-                    />
-                );
+    //         case 'password':
+    //             return (
+    //                 <input
+    //                     type="password"
+    //                     className="border px-2 py-1 w-full"
+    //                     placeholder={item.placeholder || "Password field"}
+    //                     required={item.required ?? false}
+    //                 />
+    //             );
 
-            case 'file':
-                return (
-                    <input
-                        type="file"
-                        className="border px-2 py-1 w-full"
-                        accept={item.accept || undefined}
-                        required={item.required ?? false}
-                    />
-                );
+    //         case 'file':
+    //             return (
+    //                 <input
+    //                     type="file"
+    //                     className="border px-2 py-1 w-full"
+    //                     accept={item.accept || undefined}
+    //                     required={item.required ?? false}
+    //                 />
+    //             );
 
-            case 'image':
-                return (
-                    <input
-                        type="image"
-                        className="border px-2 py-1 w-full"
-                        accept={item.accept || undefined}
-                        required={item.required ?? false}
-                    />
-                );
+    //         case 'image':
+    //             return (
+    //                 <input
+    //                     type="image"
+    //                     className="border px-2 py-1 w-full"
+    //                     accept={item.accept || undefined}
+    //                     required={item.required ?? false}
+    //                 />
+    //             );
 
-            default:
-                return (
-                    <div className="text-red-500">Unknown element type: {item.type}</div>
-                );
-        }
-    };
+    //         default:
+    //             return (
+    //                 <div className="text-red-500">Unknown element type: {item.type}</div>
+    //             );
+    //     }
+    // };
 
 
     return (
@@ -378,8 +437,8 @@ export default function FormCanvas({ formId }: Props) {
 
                     <DragOverlay zIndex={1000} adjustScale={true} dropAnimation={null}>
                         {activeId ? (
-                            <div className="opacity-90 scale-105">
-                                <div className="border p-3 bg-white shadow-lg rounded min-w-[250px]">
+                            <div className="opacity-90 scale-100">
+                                <div className="border border-emerald-500 p-3 bg-white shadow-lg rounded-xl min-w-[250px]">
                                     {renderPreviewForId(activeId)}
                                 </div>
                             </div>
@@ -424,7 +483,7 @@ export default function FormCanvas({ formId }: Props) {
                         <ElementEditor
                             editingItem={editingItem}
                             setEditingItem={setEditingItem}
-                            onSave = {onSave}
+                            onSave={onSave}
                         />
                     )
                 }
@@ -433,14 +492,15 @@ export default function FormCanvas({ formId }: Props) {
         </div >
     )
 
+
     function renderPreviewForId(id: string) {
         const item = items.find(item => item.id === id);
         if (!item) return null;
 
         return (
-            <div>
+            <div className='flex flex-row'>
+                <span className="text-sm bg-emerald-100 text-emerald-800 px-2 py-1 rounded mr-2">{getElementIcon(item.type)}</span>
                 <div className="font-medium mb-2">{item.label}</div>
-                {renderFormElement(item)}
             </div>
         );
     }

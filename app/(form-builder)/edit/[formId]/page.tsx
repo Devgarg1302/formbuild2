@@ -29,9 +29,6 @@ export default function EditForm() {
     const [isPublished, setIsPublished] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [availableForms, setAvailableForms] = useState<Array<{ id: string; title: string }>>([]);
-
-
 
     useEffect(() => {
         const fetchForm = async () => {
@@ -154,22 +151,7 @@ export default function EditForm() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* <DndContext
-                    sensors={sensors}
-                    collisionDetection={rectIntersection}
-                    onDragEnd={handleDragEnd}
-                >
-                    <div className="lg:col-span-1">
-                        <ElementsSidebar />
-                    </div>
 
-                    <FormCanvas 
-                        form={form} 
-                        formId={formId} 
-                        setForm={setForm} 
-                    />
-
-                </DndContext> */}
                 <ElementsSidebar />
 
                 <FormCanvas formId={formId} />
